@@ -217,10 +217,17 @@ jobs:
         run: |
           set -euo pipefail
           cd "$GITHUB_WORKSPACE/kernel_workspace/android-kernel"
-          if [[ -f "$GITHUB_WORKSPACE/patches/fix_kconfig.patch" ]]; then
-            git apply "$GITHUB_WORKSPACE/patches/fix_kconfig.patch"
-          else
+          patch_file="$GITHUB_WORKSPACE/patches/fix_kconfig.patch"
+          if [[ ! -f "$patch_file" ]]; then
             echo "Kconfig patch not found, skipping"
+            exit 0
+          fi
+          if git apply --check "$patch_file" 2>/tmp/kconfig-patch-check.log; then
+            git apply "$patch_file"
+            echo "Applied fix_kconfig.patch"
+          else
+            echo "::warning::fix_kconfig.patch is invalid or not applicable; skipping"
+            cat /tmp/kconfig-patch-check.log || true
           fi
 
       - name: Disable strong stack protector
