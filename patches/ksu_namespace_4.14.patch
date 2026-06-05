@@ -1,14 +1,18 @@
+diff --git a/fs/internal.h b/fs/internal.h
 --- a/fs/internal.h
 +++ b/fs/internal.h
 @@ -68,6 +68,7 @@ extern int sb_prepare_remount_readonly(struct super_block *);
+ extern int sb_prepare_remount_readonly(struct super_block *);
  
  extern void __init mnt_init(void);
 +int path_umount(struct path *path, int flags);
  
  extern int __mnt_want_write(struct vfsmount *);
+ extern int __mnt_want_write_file(struct file *);
+diff --git a/fs/namespace.c b/fs/namespace.c
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
-@@ -1781,6 +1781,44 @@ SYSCALL_DEFINE1(oldumount, char __user *, name)
+@@ -1781,6 +1781,38 @@ SYSCALL_DEFINE1(oldumount, char __user *, name)
  
  #endif
  
