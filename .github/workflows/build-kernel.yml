@@ -212,6 +212,20 @@ jobs:
           cd "$GITHUB_WORKSPACE/kernel_workspace"
           git clone --recursive "${{ env.KERNEL_SOURCE }}" -b "${{ env.KERNEL_SOURCE_BRANCH }}" android-kernel --depth=1
 
+      - name: Apply KernelSU 4.14 namespace backport
+        if: env.ENABLE_KERNELSU == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE/kernel_workspace/android-kernel"
+          patch_file="$GITHUB_WORKSPACE/patches/ksu_namespace_4.14.patch"
+          if [[ -f "$patch_file" ]] && ! grep -q "^int path_umount" fs/namespace.c; then
+            git apply "$patch_file"
+            echo "Applied ksu_namespace_4.14.patch"
+          else
+            echo "Skipping namespace backport (missing patch or already applied)"
+          fi
+
       - name: Apply Kconfig patch
         shell: bash
         run: |
