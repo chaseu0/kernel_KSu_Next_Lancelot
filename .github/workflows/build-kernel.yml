@@ -370,6 +370,19 @@ jobs:
             cd "$GITHUB_WORKSPACE/kernel_workspace/android-kernel"
           fi
 
+      - name: Sync out/.config after defconfig edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE/kernel_workspace/android-kernel"
+          make ARCH="${{ env.KERNEL_ARCH }}" O=out "${DEVICE}_defconfig"
+          ./scripts/config --file out/.config --disable CONFIG_CC_STACKPROTECTOR_STRONG
+          make ARCH="${{ env.KERNEL_ARCH }}" O=out olddefconfig
+          if [[ "${{ env.ENABLE_KERNELSU }}" == "true" ]]; then
+            ./scripts/config --file out/.config --enable CONFIG_KSU
+            make ARCH="${{ env.KERNEL_ARCH }}" O=out olddefconfig
+          fi
+
       - name: Setup ccache
         if: env.ENABLE_CCACHE == 'true'
         uses: hendrikmuhs/ccache-action@v1.2
