@@ -289,29 +289,35 @@ jobs:
               } >> "arch/${{ env.KERNEL_ARCH }}/configs/${DEVICE}_defconfig"
             fi
             # Add KSU related configs
-            for config in \
-              CONFIG_KSU=y \
-              CONFIG_WITH_KPROBES=n \
-              CONFIG_KSU_SUSFS=y \
-              CONFIG_KSU_SUSFS_SUS_PATH=y \
-              CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y \
-              CONFIG_KSU_SUSFS_SUS_MOUNT=y \
-              CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y \
-              CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y \
-              CONFIG_KSU_SUSFS_SUS_KSTAT=y \
-              CONFIG_KSU_SUSFS_TRY_UMOUNT=y \
-              CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y \
-              CONFIG_KSU_SUSFS_SPOOF_UNAME=y \
-              CONFIG_KSU_SUSFS_ENABLE_LOG=y \
-              CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y \
-              CONFIG_KSU_SUSFS_SPOOF_PROC_CMDLINE=y \
-              CONFIG_KSU_SUSFS_OPEN_REDIRECT=y \
-              CONFIG_KSU_SUSFS_SUS_SU=n
-            do
+            ksu_configs=(
+              CONFIG_KSU=y
+              CONFIG_WITH_KPROBES=n
+            )
+            if [[ "${{ env.ENABLE_KSU_SUSFS }}" != "false" ]]; then
+              ksu_configs+=(
+                CONFIG_KSU_SUSFS=y
+                CONFIG_KSU_SUSFS_SUS_PATH=y
+                CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y
+                CONFIG_KSU_SUSFS_SUS_MOUNT=y
+                CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y
+                CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y
+                CONFIG_KSU_SUSFS_SUS_KSTAT=y
+                CONFIG_KSU_SUSFS_TRY_UMOUNT=y
+                CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y
+                CONFIG_KSU_SUSFS_SPOOF_UNAME=y
+                CONFIG_KSU_SUSFS_ENABLE_LOG=y
+                CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
+                CONFIG_KSU_SUSFS_SPOOF_PROC_CMDLINE=y
+                CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
+                CONFIG_KSU_SUSFS_SUS_SU=n
+              )
+            else
+              ksu_configs+=(CONFIG_KSU_SUSFS=n)
+            fi
+            for config in "${ksu_configs[@]}"; do
               if ! grep -q "^${config%%=*}" "arch/${{ env.KERNEL_ARCH }}/configs/${DEVICE}_defconfig"; then
                 echo "$config" >> "arch/${{ env.KERNEL_ARCH }}/configs/${DEVICE}_defconfig"
               else
-                # Replace existing
                 key="${config%%=*}"
                 sed -i "s/^$key.*/$config/" "arch/${{ env.KERNEL_ARCH }}/configs/${DEVICE}_defconfig"
               fi
