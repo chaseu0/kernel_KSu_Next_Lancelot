@@ -148,7 +148,7 @@ jobs:
         run: |
           set -euo pipefail
           cd "$GITHUB_WORKSPACE/kernel_workspace"
-          wget -nv -O clang.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/clang+llvm-17.0.6-aarch64-linux-gnu.tar.xz
+          wget -nv --timeout=120 --tries=5 --waitretry=10 -O clang.tar.xz "${{ env.CLANG_SOURCE }}"
           mkdir clang
           tar -C clang/ -Jxvf clang.tar.xz --strip-components=1
           rm clang.tar.xz
@@ -164,19 +164,35 @@ jobs:
         run: |
           set -euo pipefail
           cd "$GITHUB_WORKSPACE/kernel_workspace"
+          download_toolchain() {
+            local url="$1" output="$2"
+            wget -nv --timeout=120 --tries=5 --waitretry=10 -O "$output" "$url"               || curl -fL --retry 5 --retry-delay 10 --connect-timeout 60 -o "$output" "$url"
+          }
+          link_cross_prefix() {
+            local dir="$1" from_prefix="$2" to_prefix="$3"
+            shopt -s nullglob
+            for tool in "$dir"/${from_prefix}-*; do
+              base="${tool##*/}"
+              suffix="${base#${from_prefix}-}"
+              ln -sf "$base" "$dir/${to_prefix}-${suffix}"
+            done
+            shopt -u nullglob
+          }
           if [[ "${{ env.USE_GCC_64 }}" == "true" ]]; then
-            wget -nv -O gcc-64.tar.xz "${{ env.GCC_64_SOURCE }}"
+            download_toolchain "${{ env.GCC_64_SOURCE }}" gcc-64.tar.xz
             mkdir gcc-64
             tar -C gcc-64/ -Jxvf gcc-64.tar.xz --strip-components=1
             rm gcc-64.tar.xz
+            link_cross_prefix gcc-64/bin aarch64-none-linux-gnu aarch64-linux-gnu
             ls -l gcc-64/bin
             test -f gcc-64/bin/aarch64-linux-gnu-gcc && echo "Found: aarch64-linux-gnu-gcc" || echo "Missing: aarch64-linux-gnu-gcc"
           fi
           if [[ "${{ env.USE_GCC_32 }}" == "true" ]]; then
-            wget -nv -O gcc-32.tar.xz "${{ env.GCC_32_SOURCE }}"
+            download_toolchain "${{ env.GCC_32_SOURCE }}" gcc-32.tar.xz
             mkdir gcc-32
             tar -C gcc-32/ -Jxvf gcc-32.tar.xz --strip-components=1
             rm gcc-32.tar.xz
+            link_cross_prefix gcc-32/bin arm-none-linux-gnueabihf arm-linux-gnueabi
             ls -l gcc-32/bin
             test -f gcc-32/bin/arm-linux-gnueabi-gcc && echo "Found: arm-linux-gnueabi-gcc" || echo "Missing: arm-linux-gnueabi-gcc"
           fi
