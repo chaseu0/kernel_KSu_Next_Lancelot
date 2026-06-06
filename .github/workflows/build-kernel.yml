@@ -371,6 +371,7 @@ jobs:
         if [ ${{ env.CHECK_DTBO_IS_OK }} = true ]; then
             cp android-kernel/out/arch/${{ env.KERNEL_ARCH }}/boot/dtbo.img AnyKernel3/
         fi
+        cp $GITHUB_WORKSPACE/anykernel/anykernel.sh AnyKernel3/anykernel.sh
         rm -rf AnyKernel3/.git* AnyKernel3/README.md
 
     - name: Make boot image
